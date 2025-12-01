@@ -3,11 +3,15 @@ package com.sernova.web;
 import com.sernova.domain.Address;
 import com.sernova.domain.Person;
 import com.sernova.domain.PersonRepository;
+import com.sernova.dto.AddressDto;
+import com.sernova.dto.PersonDto;
+import com.sernova.dto.PersonWithAddressesDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,14 +32,40 @@ public class ApiController {
     }
 
     @GetMapping("/persons")
-    public ResponseEntity<List<Person>> persons() {
-        return ResponseEntity.ok(personRepository.findAll());
+    public ResponseEntity<List<PersonDto>> getPersons() {
+        List<Person> persons = personRepository.findAll();
+        List<PersonDto> result = persons.stream()
+                .map(p -> new PersonDto(
+                        p.getId(),
+                        p.getFirstName(),
+                        p.getLastName()))
+                .toList();   // returns List<PersonDto>
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/persons-with-addresses")
-    public ResponseEntity<List<Person>> personsWithAddresses() {
-        return ResponseEntity.ok(personRepository.findAll());
+    public ResponseEntity<List<PersonWithAddressesDto>> personsWithAddresses() {
+        List<Person> persons = personRepository.findAllWithAddresses(); // single join query
+
+        List<PersonWithAddressesDto> result = persons.stream()
+                .map(p -> new PersonWithAddressesDto(
+                        p.getId(),
+                        p.getFirstName(),
+                        p.getLastName(),
+                        p.getAddresses().stream()
+                                .map(a -> new AddressDto(
+                                        a.getId(),
+                                        a.getLine1(),
+                                        a.getCity(),
+                                        a.getCountry(),
+                                        a.getType()
+                                ))
+                                .toList()
+                ))
+                .toList();
+        return ResponseEntity.ok(result);
     }
+
 
     @PostMapping("/seed/people")
     public ResponseEntity<String> seedPeople() {
